@@ -1,6 +1,6 @@
 
 var Engine = (function(global) {
-    var numRows = 0, numCols = 0, rocks = [];
+    var numRows, numCols, rocks = [];
 
     var doc = global.document,
         win = global.window,
@@ -9,10 +9,10 @@ var Engine = (function(global) {
         lastTime,
         stop = false;
 
-    var map = []; //用来记录整个地图的框架 0为草地或河 1为石头
+    var gameMap = []; //用来记录整个地图的框架 0为草地或河 1为石头
 
-    canvas.width = 505;
-    canvas.height = 707;
+    canvas.width = 707;
+    canvas.height = 808;
     doc.body.appendChild(canvas);
 
     // 这个函数是整个游戏的主入口 负责适当的调用 update / render 函数
@@ -71,6 +71,7 @@ var Engine = (function(global) {
                 'images/stone-block.png',   // 第一行石头
                 'images/stone-block.png',   // 第二行石头
                 'images/stone-block.png',   // 第三行石头
+                'images/stone-block.png',   // 第四行石头
                 'images/grass-block.png',   // 第一行草地
                 'images/grass-block.png'    // 第二行草地
             ],
@@ -107,14 +108,14 @@ var Engine = (function(global) {
 
     //处理游戏重置逻辑 执行初始化和restart操作 只会被init调用一次
     function reset() {
-        numRows = 6;
-        numCols = 5;
+        numRows = 7;
+        numCols = 7;
         player.life = 5;
         player.sprite = "images/char-boy.png";
         player.resetPlayer();
         var heartImage = Resources.get('images/myHeart.png');
         for(var i=0; i<player.life; i++){
-            ctx.drawImage(heartImage, i * 101, 606, 80, 80);
+            ctx.drawImage(heartImage, i * 101, 101 * numRows, 80, 80);
         }
 
         var rockNum = 5;// 有可能填满河岸下的所有格子 多块石头可能重叠 需要修复
@@ -125,6 +126,7 @@ var Engine = (function(global) {
             rocks.push(new Rock(x, y));
         }
 
+        gameMap = [];
         for(var i=0; i<numRows; i++){
             var row = [];
             for(var j=0; j<numCols; j++){
@@ -138,8 +140,9 @@ var Engine = (function(global) {
                 }
                 row.push(flag);
             }
-            map.push(row);
+            gameMap.push(row);
         }
+        console.log(gameMap);
 
     }
 
@@ -162,6 +165,9 @@ var Engine = (function(global) {
 
     var restartGame = function(){
         stop = false;
+        var restartGameButton = doc.getElementsByTagName('button')[0];
+        var div = restartGameButton.parentElement;//每次留下div标签对 需要修复
+        div.removeChild(restartGameButton);
         init();
     };
 
@@ -176,8 +182,18 @@ var Engine = (function(global) {
         restartGameButton.addEventListener("click", restartGame); //在点击多次restart（30+）后游戏开始变得卡顿 需要修复
     };
 
+    //检测运动方向上的石块
+    var isRock = function(x, y) {
+        console.log(x / 101 + "----" + Math.ceil(y / 83));
+        console.log(gameMap);
+        if(gameMap[Math.ceil(y / 83)][x / 101] === 1){
+            return true;
+        }
+        return false;
+    };
+
     global.ctx = ctx;
     global.resetGame = reset;
     global.stopGame = stopGame;
-    global.gameMap = map;
+    global.isRock = isRock;
 })(this);
