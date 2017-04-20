@@ -1,6 +1,6 @@
 
 var Engine = (function(global) {
-    var numRows, numCols, rocks = [];
+    var numRows, numCols, props = [];
 
     var doc = global.document,
         win = global.window,
@@ -9,7 +9,7 @@ var Engine = (function(global) {
         lastTime,
         stop = false;
 
-    var gameMap = []; //用来记录整个地图的框架 0为草地或河 1为石头
+    var gameMap = []; //用来记录整个地图的框架 0为草地或河 1为小道具（石头，宝石）
 
     canvas.width = 707;
     canvas.height = 808;
@@ -83,19 +83,40 @@ var Engine = (function(global) {
             }
         }
 
-        for(var i=0; i<rocks.length; i++){
-            ctx.drawImage(Resources.get(rocks[i].sprite), rocks[i].x * 101, rocks[i].y * 83 - 30);
+        for(var i=0; i<props.length; i++){
+            if(props[i].constructor === Rock) {
+                ctx.drawImage(Resources.get(props[i].sprite), props[i].x * 101, props[i].y * 83 - 30);
+            }else if(props[i].constructor === BlueGem) {
+                ctx.drawImage(Resources.get(props[i].sprite), props[i].x * 101 + 5, props[i].y * 83 - 20, 91, 150);
+            }
         }
 
         renderEntities();
     }
 
-    var Rock = function(x, y) {
-        this.x = x;
-        this.y = y;
+    //石头类
+    var Rock = function() {
+        this.x = Math.floor(Math.random() * numCols);
+        this.y = Math.floor(Math.random() * (numRows - 2)) + 1;
         this.sprite = 'images/Rock.png';
     };
 
+    //宝石类
+    var Gem = function() {
+        this.x = Math.floor(Math.random() * numCols);
+        this.y = Math.floor(Math.random() * (numRows - 2)) + 1;
+    };
+    Gem.prototype.render = function() {
+        ctx.drawImage(Resources.get(this.sprite), this.x * 101, this.y * 83)
+    };
+
+    //蓝宝石子类
+    var BlueGem = function() {
+        Gem.call(this);
+        this.sprite = 'images/gem_blue.png';
+    };
+    BlueGem.prototype = Object.create(Gem.prototype);
+    BlueGem.prototype.constructor = BlueGem;
 
     //在每个时间间隙被 render 函数调用 绘制所有 enemy 和 player
     function renderEntities() {
@@ -119,20 +140,24 @@ var Engine = (function(global) {
         }
 
         var rockNum = 5;// 有可能填满河岸下的所有格子 多块石头可能重叠 需要修复
-        rocks = [];
-        for(var i=0; i<rockNum; i++){
-            var y = Math.floor(Math.random() * (numRows - 2)) + 1;
-            var x = Math.floor(Math.random() * numCols);
-            rocks.push(new Rock(x, y));
+        var gemNum = 3;// 宝石个数 先只考虑蓝宝石 记得后续加上
+        props = [];
+        for(var i=0; i<rockNum; i++) {
+            props.push(new Rock());
         }
-
+        for(var i=0; i<gemNum; i++) {
+            props.push(new BlueGem());
+        }
+        console.log(props);
         gameMap = [];
+        blueGem = new BlueGem();
+
         for(var i=0; i<numRows; i++){
             var row = [];
             for(var j=0; j<numCols; j++){
                 var flag = 0;
-                for(var k=0; k<rocks.length; k++){
-                    var a_rock = rocks[k];
+                for(var k=0; k<props.length; k++){
+                    var a_rock = props[k];
                     if(a_rock.y === i && a_rock.x === j) {
                         flag = 1;
                         break
@@ -159,7 +184,10 @@ var Engine = (function(global) {
         'images/char-pink-girl.png',
         'images/char-princess-girl.png',
         'images/myHeart.png',
-        'images/Rock.png'
+        'images/Rock.png',
+        'images/gem_blue.png',
+        'images/gem_green.png',
+        'images/gem_orange.png'
     ]);
     Resources.onReady(init);
 
