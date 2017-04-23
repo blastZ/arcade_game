@@ -26,10 +26,11 @@ var Player = function(x, y) {
     this.x = x;
     this.y = y;
     this.life = 5;
+    this.defense = 0;
     this.sprite = "images/" + this.characters[this.life - 1];
 };
 
-Player.prototype.update = function(dt) {
+Player.prototype.update = function() {
     if(this.checkCollision() === true){
         this.life = this.life - 1;
         if(this.life === 0){
@@ -73,16 +74,19 @@ Player.prototype.handleInput = function(direction) {
         case 'left': {
             if(this.x - 101 >=0 && !isRock(this.x - 101, this.y)) {
                 this.x -= 101;
+                isGem(this);
             }
             break;
         }
         case 'up': {
             if(this.y - 83 >= -30 + 83 ) {
-                if(!isRock(this.x, this.y - 83))
+                if(!isRock(this.x, this.y - 83)) {
                     this.y -= 83;
+                    isGem(this);
+                }
             }else {
                 if(!isRock(this.x, this.y - 83)) {
-                    window.alert("You Win The Game!!!");
+                    window.alert("You Win The Game!!!"); //简单的重置人物位置 并没有写进入下一关的函数 不要忘记写
                     this.resetPlayer();
                 }
             }
@@ -91,12 +95,14 @@ Player.prototype.handleInput = function(direction) {
         case 'right': {
             if(this.x + 101 <= 101 * (numCols - 1) && !isRock(this.x + 101, this.y)){
                 this.x += 101;
+                isGem(this);
             }
             break;
         }
         case 'down': {
             if(this.y + 83 <= (numRows - 1) * 83 && !isRock(this.x, this.y + 83)){
                 this.y += 83;
+                isGem(this);
             }
             break;
         }
