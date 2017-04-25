@@ -9,7 +9,7 @@ var Engine = (function(global) {
         lastTime,
         stop = false;
 
-    var gameMap = []; //用来记录整个地图的框架 0为草地或河 1为石头 2为蓝宝石
+    var gameMap = []; //用来记录整个地图的框架 0为草地或河 1为石头 2为蓝宝石 3为绿宝石 4为橙宝石
 
     canvas.width = 707;
     canvas.height = 808;
@@ -76,10 +76,10 @@ var Engine = (function(global) {
         for(var i=0; i<props.length; i++){
             if(props[i].constructor === Rock) {
                 ctx.drawImage(Resources.get(props[i].sprite), props[i].x * 101, props[i].y * 83 - 30);
-            }else if(props[i].constructor === BlueGem) {
+            }else if(props[i].constructor === BlueGem || props[i].constructor === GreenGem || props[i].constructor === OrangeGem) {
                 ctx.drawImage(Resources.get(props[i].sprite), props[i].x * 101 + 5, props[i].y * 83 - 20, 91, 150);
             }
-        }
+        }//当两颗宝石在一列上时 可能出现边缘覆盖 记得修复
 
         renderEntities();
     }
@@ -108,6 +108,22 @@ var Engine = (function(global) {
     BlueGem.prototype = Object.create(Gem.prototype);
     BlueGem.prototype.constructor = BlueGem;
 
+    //绿宝石子类
+    var GreenGem = function() {
+        Gem.call(this);
+        this.sprite = 'images/gem_green.png';
+    };
+    GreenGem.prototype = Object.create(Gem.prototype);
+    GreenGem.prototype.constructor = GreenGem;
+
+    //橙宝石子类
+    var OrangeGem = function() {
+        Gem.call(this);
+        this.sprite = 'images/gem_orange.png';
+    };
+    OrangeGem.prototype = Object.create(Gem.prototype);
+    OrangeGem.prototype.constructor = OrangeGem;
+
     //在每个时间间隙被 render 函数调用 绘制所有 enemy 和 player
     function renderEntities() {
         allEnemies.forEach(function(enemy) {
@@ -130,7 +146,7 @@ var Engine = (function(global) {
         }
 
         var rockNum = 5;// 极小概率 石头数等于列数时 所有石块在一行上 需要修复
-        var gemNum = 3;// 宝石个数 先只考虑蓝宝石 记得后续加上
+        var gemNum = 3;// 总的宝石个数 蓝绿橙三种宝石个数随机
         props = [];
         for(var i=0; i<rockNum; i++) {
             var rock;
@@ -139,13 +155,31 @@ var Engine = (function(global) {
             }while(isRepeat(rock.x, rock.y));
             props.push(rock);
         }
-        for(var i=0; i<gemNum; i++) {
-            var blueGem;
+
+        var blueGemNum = Math.floor(Math.random() * (gemNum + 1));
+        var greenGemNum = Math.floor(Math.random() * (gemNum - blueGemNum + 1));
+        var orangeGemNum = gemNum - blueGemNum - greenGemNum;
+        console.log(blueGemNum+ " " +greenGemNum+ " " +orangeGemNum);
+        for(var j=0; j<blueGemNum; j++) {
             do {
                 blueGem = new BlueGem();
             }while(isRepeat(blueGem.x, blueGem.y));
             props.push(blueGem);
         }
+        for(var j=0; j<greenGemNum; j++) {
+            do {
+                greenGem = new GreenGem();
+            }while(isRepeat(greenGem.x, greenGem.y));
+            props.push(greenGem);
+        }
+        for(var j=0; j<orangeGemNum; j++) {
+            do {
+                orangeGem = new OrangeGem();
+            }while(isRepeat(orangeGem.x, orangeGem.y));
+            props.push(orangeGem);
+        }
+
+
         console.log(props); //输出小道具数组 测试完成后删除
         gameMap = [];
 
@@ -156,6 +190,12 @@ var Engine = (function(global) {
                 for(var k=0; k<props.length; k++){
                     var a_object = props[k];
                     if(a_object.y === i && a_object.x === j) {
+                        if(props[k].constructor === OrangeGem) {
+                            flag = 4;
+                        }
+                        if(props[k].constructor === GreenGem) {
+                            flag = 3;
+                        }
                         if(props[k].constructor === BlueGem) {
                             flag = 2;
                         }else if(props[k].constructor === Rock) {
@@ -232,6 +272,10 @@ var Engine = (function(global) {
     var isGem = function(player) {
         if(gameMap[Math.ceil(player.y / 83)][player.x / 101] === 2) {
             eatGem(player, 'blue');
+        }else if(gameMap[Math.ceil(player.y / 83)][player.x / 101] === 3) {
+            eatGem(player, 'green');
+        }else if(gameMap[Math.ceil(player.y / 83)][player.x / 101] === 4) {
+            eatGem(player, 'orange');
         }
         return 0;
     };
@@ -251,11 +295,38 @@ var Engine = (function(global) {
                         }
                     }
                 }
+                gameMap[props[i].y][props[i].x] = 0;
                 props.splice(i, 1);
                 break;
             }
-            case 'green':break;
-            case 'orange':break;
+            case 'green': {
+                //没有写player属性变化
+                for(var i=0; i<props.length; i++) {
+                    if(props[i].constructor === GreenGem) {
+                        if(player.x === (props[i].x * 101) && player.y === (props[i].y * 83 - 30)) {
+                            result = i;
+                            break;
+                        }
+                    }
+                }
+                gameMap[props[i].y][props[i].x] = 0;
+                props.splice(i, 1);
+                break;
+            }
+            case 'orange': {
+                //没有写player属性变化
+                for(var i=0; i<props.length; i++) {
+                    if(props[i].constructor === OrangeGem) {
+                        if(player.x === (props[i].x * 101) && player.y === (props[i].y * 83 - 30)) {
+                            result = i;
+                            break;
+                        }
+                    }
+                }
+                gameMap[props[i].y][props[i].x] = 0;
+                props.splice(i, 1);
+                break;
+            }
         }
     };
 
