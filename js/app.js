@@ -27,6 +27,7 @@ var Player = function(x, y) {
     this.y = y;
     this.life = 5;
     this.defense = 0;
+    this.characters = ["char-boy.png", "char-cat-girl.png", "char-horn-girl.png", "char-pink-girl.png", "char-princess-girl.png"];
     this.sprite = "images/" + this.characters[this.life - 1];
 };
 
@@ -109,14 +110,12 @@ Player.prototype.handleInput = function(direction) {
     }
 };
 
-Player.prototype.characters = ["char-boy.png", "char-cat-girl.png", "char-horn-girl.png", "char-pink-girl.png", "char-princess-girl.png"];
-
-//游戏地图的大小 engine中同样有一对地图大小的变量 改变地图时都要修改 ！！！如何修改能使engine和app共用一对行列变量
+//游戏地图的大小
 var numRows = 7,
     numCols = 7;
 var allEnemies = [];
 var player = new Player((numRows-1)/2 * 101, (numCols-1) * 83 - 30);
-var win = false;
+var winGame = false;
 for(var i=0; i<4; i++){
     var row = Math.floor(Math.random() * (numRows - 2) + 1);
     var speed = Math.floor(Math.random() * 400) +50;

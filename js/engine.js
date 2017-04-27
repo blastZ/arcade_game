@@ -1,13 +1,14 @@
 
 var Engine = (function(global) {
-    var numRows, numCols, props = [];
+    var props = [];
 
     var doc = global.document,
         win = global.window,
         canvas = doc.createElement('canvas'),
         ctx = canvas.getContext('2d'),
         lastTime,
-        stop = false;
+        stop = false, //标记结束时停止游戏
+        heartImage; //生命值的图片
 
     var gameMap = []; //用来记录整个地图的框架 0为草地或河 1为石头 2为蓝宝石 3为绿宝石 4为橙宝石
 
@@ -135,12 +136,10 @@ var Engine = (function(global) {
 
     //处理游戏重置逻辑 执行初始化和restart操作 只会被init调用一次
     function reset() {
-        numRows = 7;
-        numCols = 7;
         player.life = 5;
-        player.sprite = "images/char-boy.png";
+        player.sprite = 'images/' + player.characters[player.life - 1];
         player.resetPlayer();
-        var heartImage = Resources.get('images/myHeart.png');
+        heartImage = Resources.get('images/myHeart.png');
         for(var i=0; i<player.life; i++){
             ctx.drawImage(heartImage, i * 101, 101 * numRows, 80, 80);
         }
@@ -159,7 +158,7 @@ var Engine = (function(global) {
         var blueGemNum = Math.floor(Math.random() * (gemNum + 1));
         var greenGemNum = Math.floor(Math.random() * (gemNum - blueGemNum + 1));
         var orangeGemNum = gemNum - blueGemNum - greenGemNum;
-        console.log(blueGemNum+ " " +greenGemNum+ " " +orangeGemNum);
+        console.log(blueGemNum+ " " +greenGemNum+ " " +orangeGemNum); //输出三种宝石个数 调试完成后删除
         for(var j=0; j<blueGemNum; j++) {
             do {
                 blueGem = new BlueGem();
@@ -285,12 +284,10 @@ var Engine = (function(global) {
         switch(gemType) {
             case 'blue': {
                 player.defense += 1; //还没有写 防御减少的函数
-                var result = -1;
                 for(var i=0; i<props.length; i++) {
                     if(props[i].constructor === BlueGem) {
                         //人物的x y 已经乘了 101 和 83 小道具的x y还没有
                         if(player.x === (props[i].x * 101) && player.y === (props[i].y * 83 - 30)) {
-                            result = i;
                             break;
                         }
                     }
@@ -300,11 +297,15 @@ var Engine = (function(global) {
                 break;
             }
             case 'green': {
-                //没有写player属性变化
+                if(player.life < 5 ) {
+                    player.life += 1;
+                    player.sprite = "images/" + player.characters[player.life - 1];
+                    player.render();
+                    ctx.drawImage(heartImage, (player.life - 1) * 101, 101 * numRows, 80, 80);
+                }
                 for(var i=0; i<props.length; i++) {
                     if(props[i].constructor === GreenGem) {
                         if(player.x === (props[i].x * 101) && player.y === (props[i].y * 83 - 30)) {
-                            result = i;
                             break;
                         }
                     }
@@ -318,7 +319,6 @@ var Engine = (function(global) {
                 for(var i=0; i<props.length; i++) {
                     if(props[i].constructor === OrangeGem) {
                         if(player.x === (props[i].x * 101) && player.y === (props[i].y * 83 - 30)) {
-                            result = i;
                             break;
                         }
                     }
