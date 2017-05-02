@@ -8,12 +8,13 @@ var Engine = (function(global) {
         ctx = canvas.getContext('2d'),
         lastTime,
         stop = false, //标记结束时停止游戏
-        heartImage; //生命值的图片
+        heartImage, //生命值图片
+        shieldImage; //防御图片
 
     var gameMap = []; //用来记录整个地图的框架 0为草地或河 1为石头 2为蓝宝石 3为绿宝石 4为橙宝石
 
-    canvas.width = 707;
-    canvas.height = 808;
+    canvas.width = numCols * 101;
+    canvas.height = numRows * 101 + 101;
     doc.body.appendChild(canvas);
 
     // 这个函数是整个游戏的主入口 负责适当的调用 update / render 函数
@@ -125,6 +126,29 @@ var Engine = (function(global) {
     OrangeGem.prototype = Object.create(Gem.prototype);
     OrangeGem.prototype.constructor = OrangeGem;
 
+    var myPainter = {
+        paintHeart: function() {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 101 * numRows, 202, 101);
+            ctx.drawImage(heartImage, 0, 101 * numRows, 80, 80);
+            ctx.fillStyle = 'black';
+            ctx.font = '40px serif';
+            ctx.fillText('x', 90, 101 * numRows + 60);
+            ctx.font = '50px serif';
+            ctx.fillText(player.life, 101 + 25, 101 * numRows + 65);
+        },
+        paintShield: function() {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(202, 101 * numRows, 202, 101);
+            ctx.drawImage(shieldImage, 220, 101 * numRows, 80, 80);
+            ctx.fillStyle = 'black';
+            ctx.font = '40px serif';
+            ctx.fillText('x', 310, 101 * numRows + 60);
+            ctx.font = '50px serif';
+            ctx.fillText(player.defense, 310 + 25, 101 * numRows + 65);
+        }
+    };
+
     //在每个时间间隙被 render 函数调用 绘制所有 enemy 和 player
     function renderEntities() {
         allEnemies.forEach(function(enemy) {
@@ -140,9 +164,9 @@ var Engine = (function(global) {
         player.sprite = 'images/' + player.characters[player.life - 1];
         player.resetPlayer();
         heartImage = Resources.get('images/myHeart.png');
-        for(var i=0; i<player.life; i++){
-            ctx.drawImage(heartImage, i * 101, 101 * numRows, 80, 80);
-        }
+        shieldImage = Resources.get('images/shield.png');
+        myPainter.paintHeart();
+        myPainter.paintShield();
 
         var rockNum = 5;// 极小概率 石头数等于列数时 所有石块在一行上 需要修复
         var gemNum = 3;// 总的宝石个数 蓝绿橙三种宝石个数随机
@@ -226,7 +250,8 @@ var Engine = (function(global) {
         'images/Rock.png',
         'images/gem_blue.png',
         'images/gem_green.png',
-        'images/gem_orange.png'
+        'images/gem_orange.png',
+        'images/shield.png'
     ]);
     Resources.onReady(init);
 
@@ -292,6 +317,7 @@ var Engine = (function(global) {
                         }
                     }
                 }
+                myPainter.paintShield();
                 gameMap[props[i].y][props[i].x] = 0;
                 props.splice(i, 1);
                 break;
@@ -301,7 +327,7 @@ var Engine = (function(global) {
                     player.life += 1;
                     player.sprite = "images/" + player.characters[player.life - 1];
                     player.render();
-                    ctx.drawImage(heartImage, (player.life - 1) * 101, 101 * numRows, 80, 80);
+                    myPainter.paintHeart();
                 }
                 for(var i=0; i<props.length; i++) {
                     if(props[i].constructor === GreenGem) {
@@ -335,4 +361,5 @@ var Engine = (function(global) {
     global.stopGame = stopGame;
     global.isRock = isRock;
     global.isGem = isGem;
+    global.myPainter = myPainter;
 })(this);

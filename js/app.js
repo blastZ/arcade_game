@@ -33,16 +33,20 @@ var Player = function(x, y) {
 
 Player.prototype.update = function() {
     if(this.checkCollision() === true){
-        this.life = this.life - 1;
-        if(this.life === 0){
-            stopGame();
-            ctx.fillStyle = 'white';
-            ctx.fillRect(this.life * 101, 101 * numRows, 80, 80);
+        if(this.defense > 0) {
+            this.defense -= 1;
+            myPainter.paintShield();
+            this.move('down'); //无法解决带防御状态下 人物多次碰撞的问题
         }else {
-            this.sprite = "images/" + this.characters[this.life - 1];
-            ctx.fillStyle = 'white';
-            ctx.fillRect(this.life * 101, 101 * numRows, 80, 80);
-            this.resetPlayer();
+            this.life -= 1;
+            if(this.life === 0){
+                stopGame();
+                myPainter.paintHeart();
+            }else {
+                this.sprite = "images/" + this.characters[this.life - 1];
+                myPainter.paintHeart();
+                this.resetPlayer();
+            }
         }
     }
 };
@@ -56,21 +60,7 @@ Player.prototype.resetPlayer = function() {
     this.y = (numRows - 1) * 83 - 30;
 };
 
-//碰撞检测 遭遇敌人后 设置碰撞 flag 为 true 并返回
-Player.prototype.checkCollision = function() {
-    var flag = false;
-    allEnemies.forEach(function(enemy){
-        if(enemy.y-10 === player.y){
-            if(enemy.x-60 < player.x && player.x < enemy.x+60 ){
-                flag = true;
-            }
-        }
-    });
-    return flag;
-};
-
-//处理键盘方向键输入
-Player.prototype.handleInput = function(direction) {
+Player.prototype.move = function(direction) {
     switch(direction) {
         case 'left': {
             if(this.x - 101 >=0 && !isRock(this.x - 101, this.y)) {
@@ -110,9 +100,44 @@ Player.prototype.handleInput = function(direction) {
     }
 };
 
+//碰撞检测 遭遇敌人后 设置碰撞 flag 为 true 并返回
+Player.prototype.checkCollision = function() {
+    var flag = false;
+    allEnemies.forEach(function(enemy){
+        if(enemy.y-10 === player.y){
+            if(enemy.x-60 < player.x && player.x < enemy.x+60 ){
+                flag = true;
+            }
+        }
+    });
+    return flag;
+};
+
+//处理键盘方向键输入
+Player.prototype.handleInput = function(direction) {
+    switch(direction) {
+        case 'left': {
+            this.move('left');
+            break;
+        }
+        case 'up': {
+            this.move('up');
+            break;
+        }
+        case 'right': {
+            this.move('right');
+            break;
+        }
+        case 'down': {
+            this.move('down');
+            break;
+        }
+    }
+};
+
 //游戏地图的大小
-var numRows = 7,
-    numCols = 7;
+var numRows = 7, //当改变 numRows 时 还需要改变 engine 的 rowImages
+    numCols = 9;
 var allEnemies = [];
 var player = new Player((numRows-1)/2 * 101, (numCols-1) * 83 - 30);
 var winGame = false;
