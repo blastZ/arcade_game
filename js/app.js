@@ -34,9 +34,8 @@ var Player = function(x, y) {
 Player.prototype.update = function() {
     if(this.checkCollision() === true){
         if(this.defense > 0) {
-            this.defense -= 1;
+            this.defense -= 5;
             myPainter.paintShield();
-            this.move('down'); //无法解决带防御状态下 人物多次碰撞的问题
         }else {
             this.life -= 1;
             if(this.life === 0){

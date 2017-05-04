@@ -32,6 +32,9 @@ var Engine = (function(global) {
         //在浏览准备好调用重绘下一个帧的时候 用浏览器的 requestAnimationFrame 函数来调用这个函数
         if(stop !== true) {
             win.requestAnimationFrame(main);
+        }else {
+            myPainter.paintGameOver();
+            myPainter.paintRestartButton();
         }
     }
 
@@ -133,19 +136,38 @@ var Engine = (function(global) {
             ctx.drawImage(heartImage, 0, 101 * numRows, 80, 80);
             ctx.fillStyle = 'black';
             ctx.font = '40px serif';
-            ctx.fillText('x', 90, 101 * numRows + 60);
+            ctx.fillText(':', 90, 101 * numRows + 60);
             ctx.font = '50px serif';
             ctx.fillText(player.life, 101 + 25, 101 * numRows + 65);
         },
         paintShield: function() {
             ctx.fillStyle = 'white';
-            ctx.fillRect(202, 101 * numRows, 202, 101);
+            ctx.fillRect(202, 101 * numRows, 303, 101);
             ctx.drawImage(shieldImage, 220, 101 * numRows, 80, 80);
             ctx.fillStyle = 'black';
             ctx.font = '40px serif';
-            ctx.fillText('x', 310, 101 * numRows + 60);
+            ctx.fillText(':', 310, 101 * numRows + 60);
             ctx.font = '50px serif';
-            ctx.fillText(player.defense, 310 + 25, 101 * numRows + 65);
+            ctx.fillText(player.defense + '%', 310 + 25, 101 * numRows + 65);
+        },
+        paintGameOver: function() {
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 8;
+            ctx.font = '80px serif';
+            ctx.strokeText('Game Over', (numCols / 2 - 2) * 101, (numCols / 2 - 2) * 101);
+            ctx.fillStyle = 'white';
+            ctx.font = '80px serif';
+            ctx.fillText('Game Over', (numCols / 2 - 2) * 101, (numCols / 2 - 2) * 101);
+        },
+        paintRestartButton: function() {
+            var divTag = doc.createElement('div');
+            var restartGameButton = doc.createElement('button');
+            restartGameButton.id = 'restartButton';
+            var buttonName = doc.createTextNode("Restart");
+            restartGameButton.appendChild(buttonName);
+            divTag.appendChild(restartGameButton);
+            doc.body.appendChild(divTag);
+            restartGameButton.addEventListener("click", restartGame); //在点击多次restart（30+）后游戏开始变得卡顿 需要修复
         }
     };
 
@@ -275,13 +297,6 @@ var Engine = (function(global) {
     //停止游戏
     var stopGame = function(){
         stop = true;
-        var divTag = doc.createElement('div');
-        var restartGameButton = doc.createElement('button');
-        var buttonName = doc.createTextNode("Restart");
-        restartGameButton.appendChild(buttonName);
-        divTag.appendChild(restartGameButton);
-        doc.body.appendChild(divTag);
-        restartGameButton.addEventListener("click", restartGame); //在点击多次restart（30+）后游戏开始变得卡顿 需要修复
     };
 
     //检测运动方向上的石块
@@ -308,7 +323,7 @@ var Engine = (function(global) {
     var eatGem = function(player, gemType) {
         switch(gemType) {
             case 'blue': {
-                player.defense += 1; //还没有写 防御减少的函数
+                player.defense += 100;
                 for(var i=0; i<props.length; i++) {
                     if(props[i].constructor === BlueGem) {
                         //人物的x y 已经乘了 101 和 83 小道具的x y还没有
