@@ -27,7 +27,7 @@ var Player = function(x, y) {
     this.y = y;
     this.life = 5;
     this.defense = 0;
-    this.characters = ["char-boy.png", "char-cat-girl.png", "char-horn-girl.png", "char-pink-girl.png", "char-princess-girl.png"];
+    this.characters = ["char-princess-girl.png", "char-horn-girl.png", "char-pink-girl.png", "char-cat-girl.png", "char-boy.png"];
     this.sprite = "images/" + this.characters[this.life - 1];
 };
 
@@ -39,7 +39,7 @@ Player.prototype.update = function() {
         }else {
             this.life -= 1;
             if(this.life === 0){
-                stopGame();
+                stopGame('lose');
                 myPainter.paintHeart();
             }else {
                 this.sprite = "images/" + this.characters[this.life - 1];
@@ -76,8 +76,7 @@ Player.prototype.move = function(direction) {
                 }
             }else {
                 if(!isRock(this.x, this.y - 83)) {
-                    window.alert("You Win The Game!!!"); //简单的重置人物位置 并没有写进入下一关的函数 不要忘记写
-                    this.resetPlayer();
+                    stopGame('win');
                 }
             }
             break;
@@ -140,12 +139,14 @@ var numRows = 7, //当改变 numRows 时 还需要改变 engine 的 rowImages
 var allEnemies = [];
 var player = new Player((numRows-1)/2 * 101, (numCols-1) * 83 - 30);
 var winGame = false;
-for(var i=0; i<4; i++){
-    var row = Math.floor(Math.random() * (numRows - 2) + 1);
-    var speed = Math.floor(Math.random() * 400) +50;
-    allEnemies.push(new Enemy(-2 * 101, row * 83 - 20, speed));
+function addEnemies() {
+    for(var i=0; i<4; i++){
+        var row = Math.floor(Math.random() * (numRows - 2) + 1);
+        var speed = Math.floor(Math.random() * 400) +50;
+        allEnemies.push(new Enemy(-2 * 101, row * 83 - 20, speed));
+    }
 }
-
+addEnemies();
 document.addEventListener('keyup', function(e) {
     var allowedKeys = {
         37: 'left',

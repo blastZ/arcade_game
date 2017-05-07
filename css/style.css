@@ -2,7 +2,7 @@ body {
     text-align: center;
 }
 
-#restartButton {
+#restartButton, #nextButton {
     background-color: black;
     position: absolute;
     z-index: 10;
@@ -15,7 +15,7 @@ body {
     border: 2px solid gray;
 }
 
-#restartButton:hover {
+#restartButton:hover, #nextButton:hover {
     background-color: #657376;
     cursor: pointer;
 }

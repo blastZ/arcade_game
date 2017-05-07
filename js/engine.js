@@ -7,11 +7,11 @@ var Engine = (function(global) {
         canvas = doc.createElement('canvas'),
         ctx = canvas.getContext('2d'),
         lastTime,
-        stop = false, //标记结束时停止游戏
+        stop = {stopFlag: false, typeFlag: 'lose'}, //stopFlag 标记停止或继续游戏 typeFlag 标记输赢
         heartImage, //生命值图片
         shieldImage; //防御图片
 
-    var gameMap = []; //用来记录整个地图的框架 0为草地或河 1为石头 2为蓝宝石 3为绿宝石 4为橙宝石
+    var gameMap = []; //用来记录整个地图的框架 0为普通块 1为石头 2为蓝宝石 3为绿宝石 4为橙宝石
 
     canvas.width = numCols * 101;
     canvas.height = numRows * 101 + 101;
@@ -29,12 +29,16 @@ var Engine = (function(global) {
         // 设置 lastTime 变量 它会被用来决定 main 函数下次被调用的事件
         lastTime = now;
 
-        //在浏览准备好调用重绘下一个帧的时候 用浏览器的 requestAnimationFrame 函数来调用这个函数
-        if(stop !== true) {
+        if(stop.stopFlag !== true) {
             win.requestAnimationFrame(main);
         }else {
-            myPainter.paintGameOver();
-            myPainter.paintRestartButton();
+            if(stop.typeFlag === 'lose') {
+                myPainter.paintGameOver();
+                myPainter.paintRestartButton();
+            }else {
+                myPainter.paintGameWin();
+                myPainter.paintNextButton();
+            }
         }
     }
 
@@ -153,11 +157,11 @@ var Engine = (function(global) {
         paintGameOver: function() {
             ctx.strokeStyle = 'black';
             ctx.lineWidth = 8;
-            ctx.font = '80px serif';
-            ctx.strokeText('Game Over', (numCols / 2 - 2) * 101, (numCols / 2 - 2) * 101);
+            ctx.font = '80px sans-serif';
+            ctx.strokeText('Game Over !', (numCols / 2 - 2) * 101 - 30, (numRows / 2 - 1) * 101);
             ctx.fillStyle = 'white';
-            ctx.font = '80px serif';
-            ctx.fillText('Game Over', (numCols / 2 - 2) * 101, (numCols / 2 - 2) * 101);
+            ctx.font = '80px sans-serif';
+            ctx.fillText('Game Over !', (numCols / 2 - 2) * 101 - 30, (numRows / 2 - 1) * 101);
         },
         paintRestartButton: function() {
             var divTag = doc.createElement('div');
@@ -168,6 +172,25 @@ var Engine = (function(global) {
             divTag.appendChild(restartGameButton);
             doc.body.appendChild(divTag);
             restartGameButton.addEventListener("click", restartGame); //在点击多次restart（30+）后游戏开始变得卡顿 需要修复
+        },
+        paintGameWin: function() {
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 8;
+            ctx.font = '80px sans-serif';
+            ctx.strokeText('You Win !', (numCols / 2 - 2) * 101 + 15, (numRows / 2 - 1) * 101);
+            ctx.fillStyle = 'white';
+            ctx.font = '80px sans-serif';
+            ctx.fillText('You Win !', (numCols / 2 - 2) * 101 + 15, (numRows / 2 - 1) * 101);
+        },
+        paintNextButton: function() {
+            var divTag = doc.createElement('div');
+            var nextButton = doc.createElement('button');
+            nextButton.id = 'nextButton';
+            var buttonName = doc.createTextNode("Next");
+            nextButton.appendChild(buttonName);
+            divTag.appendChild(nextButton);
+            doc.body.appendChild(divTag);
+            nextButton.addEventListener("click", nextLevel);
         }
     };
 
@@ -182,8 +205,11 @@ var Engine = (function(global) {
 
     //处理游戏重置逻辑 执行初始化和restart操作 只会被init调用一次
     function reset() {
-        player.life = 5;
-        player.sprite = 'images/' + player.characters[player.life - 1];
+        if(stop.typeFlag === 'lose') {
+            player.life = 5;
+            player.defense = 0;
+            player.sprite = 'images/' + player.characters[player.life - 1];
+        }
         player.resetPlayer();
         heartImage = Resources.get('images/myHeart.png');
         shieldImage = Resources.get('images/shield.png');
@@ -278,7 +304,18 @@ var Engine = (function(global) {
     Resources.onReady(init);
 
     var restartGame = function(){
-        stop = false;
+        stop.stopFlag = false;
+        allEnemies = [];
+        addEnemies();
+        var div = document.getElementsByTagName('div')[0];
+        document.body.removeChild(div);
+        init();
+    };
+
+    var nextLevel = function() {
+        stop.stopFlag = false;
+        allEnemies = [];
+        addEnemies();
         var div = document.getElementsByTagName('div')[0];
         document.body.removeChild(div);
         init();
@@ -295,8 +332,9 @@ var Engine = (function(global) {
     };
 
     //停止游戏
-    var stopGame = function(){
-        stop = true;
+    var stopGame = function(type){
+        stop.stopFlag = true;
+        stop.typeFlag = type;
     };
 
     //检测运动方向上的石块
@@ -323,7 +361,8 @@ var Engine = (function(global) {
     var eatGem = function(player, gemType) {
         switch(gemType) {
             case 'blue': {
-                player.defense += 100;
+                player.defense += 50;
+                if(player.defense > 100) palyer.defense = 100;
                 for(var i=0; i<props.length; i++) {
                     if(props[i].constructor === BlueGem) {
                         //人物的x y 已经乘了 101 和 83 小道具的x y还没有
@@ -333,8 +372,8 @@ var Engine = (function(global) {
                     }
                 }
                 myPainter.paintShield();
-                gameMap[props[i].y][props[i].x] = 0;
-                props.splice(i, 1);
+                gameMap[props[i].y][props[i].x] = 0; //地图上该点重置
+                props.splice(i, 1); //道具移除
                 break;
             }
             case 'green': {
@@ -356,7 +395,13 @@ var Engine = (function(global) {
                 break;
             }
             case 'orange': {
-                //没有写player属性变化
+                allEnemies.forEach(function(enemy) {
+                    enemy.speed -= 200;
+                    if(enemy.speed < 0) enemy.speed = 80;
+                    setTimeout(function() {
+                        enemy.speed += 200;
+                    },2000)
+                });//没有写player属性变化
                 for(var i=0; i<props.length; i++) {
                     if(props[i].constructor === OrangeGem) {
                         if(player.x === (props[i].x * 101) && player.y === (props[i].y * 83 - 30)) {
