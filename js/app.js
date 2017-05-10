@@ -134,15 +134,15 @@ Player.prototype.handleInput = function(direction) {
 };
 
 //游戏地图的大小
-var numRows = 7, //当改变 numRows 时 还需要改变 engine 的 rowImages
-    numCols = 9;
+var numRows = 7 , //当改变 numRows 时 还需要改变 engine 的 rowImages
+    numCols = 9 + 2;
 var allEnemies = [];
 var player = new Player((numRows-1)/2 * 101, (numCols-1) * 83 - 30);
 var winGame = false;
 function addEnemies() {
     for(var i=0; i<4; i++){
         var row = Math.floor(Math.random() * (numRows - 2) + 1);
-        var speed = Math.floor(Math.random() * 400) +50;
+        var speed = Math.floor(Math.random() * 400) + 80;
         allEnemies.push(new Enemy(-2 * 101, row * 83 - 20, speed));
     }
 }

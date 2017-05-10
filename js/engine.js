@@ -34,10 +34,10 @@ var Engine = (function(global) {
         }else {
             if(stop.typeFlag === 'lose') {
                 myPainter.paintGameOver();
-                myPainter.paintRestartButton();
+                myPainter.paintRestartMessage();
             }else {
                 myPainter.paintGameWin();
-                myPainter.paintNextButton();
+                myPainter.paintNextMessage();
             }
         }
     }
@@ -86,7 +86,7 @@ var Engine = (function(global) {
             if(props[i].constructor === Rock) {
                 ctx.drawImage(Resources.get(props[i].sprite), props[i].x * 101, props[i].y * 83 - 30);
             }else if(props[i].constructor === BlueGem || props[i].constructor === GreenGem || props[i].constructor === OrangeGem) {
-                ctx.drawImage(Resources.get(props[i].sprite), props[i].x * 101 + 5, props[i].y * 83 - 20, 91, 150);
+                ctx.drawImage(Resources.get(props[i].sprite), props[i].x * 101 + 7, props[i].y * 83 - 9, 85, 135);
             }
         }//当两颗宝石在一列上时 可能出现边缘覆盖 记得修复
 
@@ -163,15 +163,19 @@ var Engine = (function(global) {
             ctx.font = '80px sans-serif';
             ctx.fillText('Game Over !', (numCols / 2 - 2) * 101 - 30, (numRows / 2 - 1) * 101);
         },
-        paintRestartButton: function() {
-            var divTag = doc.createElement('div');
-            var restartGameButton = doc.createElement('button');
-            restartGameButton.id = 'restartButton';
-            var buttonName = doc.createTextNode("Restart");
-            restartGameButton.appendChild(buttonName);
-            divTag.appendChild(restartGameButton);
-            doc.body.appendChild(divTag);
-            restartGameButton.addEventListener("click", restartGame); //在点击多次restart（30+）后游戏开始变得卡顿 需要修复
+        paintRestartMessage: function() {
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 6;
+            ctx.font = '30px sans-serif';
+            ctx.strokeText('press Enter to restart game', (numCols / 2 - 2) * 101, (numRows / 2) * 101 - 20);
+            ctx.fillStyle = 'white';
+            ctx.font = '30px sans-serif';
+            ctx.fillText('press Enter to restart game', (numCols / 2 - 2) * 101, (numRows / 2) * 101 - 20);
+            doc.addEventListener('keyup', function(e){
+                if(e.keyCode === 13 && stop.stopFlag === true && stop.typeFlag === 'lose') {
+                    restartGame();
+                }
+            });
         },
         paintGameWin: function() {
             ctx.strokeStyle = 'black';
@@ -182,15 +186,19 @@ var Engine = (function(global) {
             ctx.font = '80px sans-serif';
             ctx.fillText('You Win !', (numCols / 2 - 2) * 101 + 15, (numRows / 2 - 1) * 101);
         },
-        paintNextButton: function() {
-            var divTag = doc.createElement('div');
-            var nextButton = doc.createElement('button');
-            nextButton.id = 'nextButton';
-            var buttonName = doc.createTextNode("Next");
-            nextButton.appendChild(buttonName);
-            divTag.appendChild(nextButton);
-            doc.body.appendChild(divTag);
-            nextButton.addEventListener("click", nextLevel);
+        paintNextMessage: function() {
+           ctx.strokeStyle = 'black';
+           ctx.lineWidth = 6;
+           ctx.font = '30px sans-serif';
+           ctx.strokeText('press Enter to start next level', (numCols / 2 - 2) * 101, (numRows / 2) * 101 - 20);
+           ctx.fillStyle = 'white';
+           ctx.font = '30px sans-serif';
+           ctx.fillText('press Enter to start next level', (numCols / 2 - 2) * 101, (numRows / 2) * 101 - 20);
+           doc.addEventListener('keyup', function(e){
+               if(e.keyCode === 13 && stop.stopFlag === true && stop.typeFlag === 'win') {
+                   nextLevel();
+               }
+           });
         }
     };
 
@@ -307,8 +315,6 @@ var Engine = (function(global) {
         stop.stopFlag = false;
         allEnemies = [];
         addEnemies();
-        var div = document.getElementsByTagName('div')[0];
-        document.body.removeChild(div);
         init();
     };
 
@@ -316,8 +322,6 @@ var Engine = (function(global) {
         stop.stopFlag = false;
         allEnemies = [];
         addEnemies();
-        var div = document.getElementsByTagName('div')[0];
-        document.body.removeChild(div);
         init();
     };
 
