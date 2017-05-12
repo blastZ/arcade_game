@@ -60,6 +60,7 @@ Player.prototype.resetPlayer = function() {
 };
 
 Player.prototype.move = function(direction) {
+    Resources.get('sounds/move.mp3').play();
     switch(direction) {
         case 'left': {
             if(this.x - 101 >=0 && !isRock(this.x - 101, this.y)) {

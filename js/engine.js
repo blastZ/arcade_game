@@ -35,15 +35,20 @@ var Engine = (function(global) {
             if(stop.typeFlag === 'lose') {
                 myPainter.paintGameOver();
                 myPainter.paintRestartMessage();
+                Resources.get('sounds/game_over.mp3').play();
             }else {
                 myPainter.paintGameWin();
                 myPainter.paintNextMessage();
+                Resources.get('sounds/next_level.mp3').play();
             }
         }
     }
 
     // 这个函数调用一些初始化工作 特别是设置游戏必须的 lastTime 变量 这些工作只用做一次就够了
     function init() {
+        var bg_sound = Resources.get('sounds/bg_sound.mp3');
+        bg_sound.volume = 0.1;
+        bg_sound.play();
         reset();
         lastTime = Date.now();
         main();
@@ -196,6 +201,7 @@ var Engine = (function(global) {
            ctx.fillText('press Enter to start next level', (numCols / 2 - 2) * 101, (numRows / 2) * 101 - 20);
            doc.addEventListener('keyup', function(e){
                if(e.keyCode === 13 && stop.stopFlag === true && stop.typeFlag === 'win') {
+                   Resources.get('sounds/enter_sound.mp3').play();
                    nextLevel();
                }
            });
@@ -307,7 +313,13 @@ var Engine = (function(global) {
         'images/gem_blue.png',
         'images/gem_green.png',
         'images/gem_orange.png',
-        'images/shield.png'
+        'images/shield.png',
+        'sounds/move.mp3',
+        'sounds/eat_gem.mp3',
+        'sounds/next_level.mp3',
+        'sounds/game_over.mp3',
+        'sounds/bg_sound.mp3',
+        'sounds/enter_sound.mp3'
     ]);
     Resources.onReady(init);
 
@@ -363,6 +375,7 @@ var Engine = (function(global) {
 
     //拾取运动方向上的宝石
     var eatGem = function(player, gemType) {
+        Resources.get('sounds/eat_gem.mp3').play();
         switch(gemType) {
             case 'blue': {
                 player.defense += 50;
