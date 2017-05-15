@@ -9,7 +9,8 @@ var Engine = (function(global) {
         lastTime,
         stop = {stopFlag: false, typeFlag: 'lose'}, //stopFlag 标记停止或继续游戏 typeFlag 标记输赢
         heartImage, //生命值图片
-        shieldImage; //防御图片
+        shieldImage, //防御图片
+        gameTime; //游戏时间
 
     var gameMap = []; //用来记录整个地图的框架 0为普通块 1为石头 2为蓝宝石 3为绿宝石 4为橙宝石
 
@@ -93,8 +94,8 @@ var Engine = (function(global) {
             }else if(props[i].constructor === BlueGem || props[i].constructor === GreenGem || props[i].constructor === OrangeGem) {
                 ctx.drawImage(Resources.get(props[i].sprite), props[i].x * 101 + 7, props[i].y * 83 - 9, 85, 135);
             }
-        }//当两颗宝石在一列上时 可能出现边缘覆盖 记得修复
-
+        }
+        myPainter.paintTimeBar();//当切换到其它标签页时 paintTimeBar 会停止
         renderEntities();
     }
 
@@ -157,7 +158,7 @@ var Engine = (function(global) {
             ctx.font = '40px serif';
             ctx.fillText(':', 310, 101 * numRows + 60);
             ctx.font = '50px serif';
-            ctx.fillText(player.defense + '%', 310 + 25, 101 * numRows + 65);
+            ctx.fillText(player.defense + '%', 321 + 25, 101 * numRows + 65);
         },
         paintGameOver: function() {
             ctx.strokeStyle = 'black';
@@ -205,7 +206,41 @@ var Engine = (function(global) {
                    nextLevel();
                }
            });
+        },
+        paintTimeBar: function() {
+            ctx.beginPath();
+            ctx.moveTo(0, (numRows - 1) * 83 + 171);
+            ctx.lineTo(numCols * 101, (numRows - 1) * 83 + 171);
+            ctx.strokeStyle = '#ffe34b';
+            ctx.lineWidth = 8;
+            ctx.stroke();
+            ctx.beginPath();
+            gameTime.timeRemain -= gameTime.timeInterval;
+            ctx.moveTo(numCols * 101 / gameTime.totalTime * gameTime.timeRemain, (numRows - 1) * 83 + 171);
+            ctx.lineTo(numCols * 101, (numRows - 1) * 83 + 171);
+            ctx.strokeStyle = '#797979';
+            ctx.lineWidth = 8;
+            ctx.stroke();
+            if(gameTime.timeRemain <= 0) {
+                stopGame('lose');
+            }
+        },
+        paintScore: function() {
+            ctx.fillStyle = 'white';
+            ctx.fillRect((numCols - 3) * 101, 101 * numRows - 60, 303, 202);
+            ctx.drawImage(Resources.get('images/Star.png'), (numCols - 3) * 101 + 30, 101 * numRows - 56, 95, 161);
+            ctx.fillStyle = 'black';
+            ctx.font = '40px serif';
+            ctx.fillText(':', (numCols - 2) * 101 + 36, 101 * numRows + 60);
+            ctx.font = '50px serif';
+            ctx.fillText('0', (numCols - 2) * 101 + 47 + 25, 101 * numRows + 65);
         }
+    };
+
+    var GameTime = function() {
+        this.totalTime = 10000;
+        this.timeRemain = 10000;
+        this.timeInterval = 5;
     };
 
     //在每个时间间隙被 render 函数调用 绘制所有 enemy 和 player
@@ -229,6 +264,7 @@ var Engine = (function(global) {
         shieldImage = Resources.get('images/shield.png');
         myPainter.paintHeart();
         myPainter.paintShield();
+        myPainter.paintScore();
 
         var rockNum = 5;// 极小概率 石头数等于列数时 所有石块在一行上 需要修复
         var gemNum = 3;// 总的宝石个数 蓝绿橙三种宝石个数随机
@@ -295,6 +331,8 @@ var Engine = (function(global) {
         }
         console.log(gameMap); //输出游戏地图 测试完成后删除
 
+        gameTime = new GameTime();
+
     }
 
     // 加载绘制游戏关卡的图片 回调init函数 图片加载完毕的时候游戏开始
@@ -314,6 +352,7 @@ var Engine = (function(global) {
         'images/gem_green.png',
         'images/gem_orange.png',
         'images/shield.png',
+        'images/Star.png',
         'sounds/move.mp3',
         'sounds/eat_gem.mp3',
         'sounds/next_level.mp3',
@@ -412,6 +451,10 @@ var Engine = (function(global) {
                 break;
             }
             case 'orange': {
+                gameTime.timeRemain += 1000; //增加 1 秒剩余时间
+                if(gameTime.timeRemain > gameTime.totalTime) {
+                    gameTime.timeRemain = gameTime.totalTime;
+                }
                 allEnemies.forEach(function(enemy) {
                     enemy.speed -= 200;
                     if(enemy.speed < 0) enemy.speed = 80;

@@ -2,20 +2,3 @@ body {
     text-align: center;
 }
 
-#restartButton, #nextButton {
-    background-color: black;
-    position: absolute;
-    z-index: 10;
-    left: 46.5%;
-    top: 31%;
-    font-size: 2em;
-    color: white;
-    border-radius: 15px;
-    padding: 10px;
-    border: 2px solid gray;
-}
-
-#restartButton:hover, #nextButton:hover {
-    background-color: #657376;
-    cursor: pointer;
-}
