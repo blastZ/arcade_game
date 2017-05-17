@@ -12,10 +12,11 @@ var Engine = (function(global) {
         shieldImage, //防御图片
         gameTime; //游戏时间
 
-    var gameMap = []; //用来记录整个地图的框架 0为普通块 1为石头 2为蓝宝石 3为绿宝石 4为橙宝石
+    var gameMap = [],
+        timeouts = []; //用来记录整个地图的框架 0为普通块 1为石头 2为蓝宝石 3为绿宝石 4为橙宝石
 
-    canvas.width = numCols * 101;
-    canvas.height = numRows * 101 + 101;
+    canvas.width = numCols * BLOCK_WITH;
+    canvas.height = numRows * BLOCK_WITH + BLOCK_WITH;
     doc.body.appendChild(canvas);
 
     // 这个函数是整个游戏的主入口 负责适当的调用 update / render 函数
@@ -49,7 +50,7 @@ var Engine = (function(global) {
     function init() {
         var bg_sound = Resources.get('sounds/bg_sound.mp3');
         bg_sound.volume = 0.1;
-        bg_sound.play();
+        //bg_sound.play();
         reset();
         lastTime = Date.now();
         main();
@@ -84,20 +85,29 @@ var Engine = (function(global) {
 
         for (row = 0; row < numRows; row++) {
             for (col = 0; col < numCols; col++) {
-                ctx.drawImage(Resources.get(rowImages[row]), col * 101, row * 83);
+                ctx.drawImage(Resources.get(rowImages[row]), col * BLOCK_WITH, row * BLOCK_HEIGHT);
             }
         }
 
         for(var i=0; i<props.length; i++){
             if(props[i].constructor === Rock) {
-                ctx.drawImage(Resources.get(props[i].sprite), props[i].x * 101, props[i].y * 83 - 30);
+                ctx.drawImage(Resources.get(props[i].sprite), props[i].x * BLOCK_WITH, props[i].y * BLOCK_HEIGHT - 30);
             }else if(props[i].constructor === BlueGem || props[i].constructor === GreenGem || props[i].constructor === OrangeGem) {
-                ctx.drawImage(Resources.get(props[i].sprite), props[i].x * 101 + 7, props[i].y * 83 - 9, 85, 135);
+                ctx.drawImage(Resources.get(props[i].sprite), props[i].x * BLOCK_WITH + 7, props[i].y * BLOCK_HEIGHT - 9, 85, 135);
+            }else if(props[i].constructor === Star) {
+                ctx.drawImage(Resources.get(props[i].sprite), props[i].x * BLOCK_WITH, props[i].y * BLOCK_HEIGHT - 15);
             }
         }
         myPainter.paintTimeBar();//当切换到其它标签页时 paintTimeBar 会停止
         renderEntities();
     }
+
+    //星星类
+    var Star = function() {
+        this.x = Math.floor(Math.random() * numCols);
+        this.y = Math.floor(Math.random() * (numRows - 2)) + 1;
+        this.sprite = 'images/Star.png';
+    };
 
     //石头类
     var Rock = function() {
@@ -112,7 +122,7 @@ var Engine = (function(global) {
         this.y = Math.floor(Math.random() * (numRows - 2)) + 1;
     };
     Gem.prototype.render = function() {
-        ctx.drawImage(Resources.get(this.sprite), this.x * 101, this.y * 83)
+        ctx.drawImage(Resources.get(this.sprite), this.x * BLOCK_WITH, this.y * BLOCK_HEIGHT)
     };
 
     //蓝宝石子类
@@ -140,43 +150,50 @@ var Engine = (function(global) {
     OrangeGem.prototype.constructor = OrangeGem;
 
     var myPainter = {
+        paintStartNumber: function() {
+            ctx.fillStyle = 'black';
+            ctx.font = '20px serif';
+            for(var i=0; i<3; i++) {
+                ctx.fillText(i, BLOCK_WITH * numCols / 2, BLOCK_WITH * numRows / 2);
+            }
+        },
         paintHeart: function() {
             ctx.fillStyle = 'white';
-            ctx.fillRect(0, 101 * numRows, 202, 101);
-            ctx.drawImage(heartImage, 0, 101 * numRows, 80, 80);
+            ctx.fillRect(0, BLOCK_WITH * numRows, 202, BLOCK_WITH);
+            ctx.drawImage(heartImage, 0, BLOCK_WITH * numRows, 80, 80);
             ctx.fillStyle = 'black';
             ctx.font = '40px serif';
-            ctx.fillText(':', 90, 101 * numRows + 60);
+            ctx.fillText(':', 90, BLOCK_WITH * numRows + 60);
             ctx.font = '50px serif';
-            ctx.fillText(player.life, 101 + 25, 101 * numRows + 65);
+            ctx.fillText(player.life, BLOCK_WITH + 25, BLOCK_WITH * numRows + 65);
         },
         paintShield: function() {
             ctx.fillStyle = 'white';
-            ctx.fillRect(202, 101 * numRows, 303, 101);
-            ctx.drawImage(shieldImage, 220, 101 * numRows, 80, 80);
+            ctx.fillRect(202, BLOCK_WITH * numRows, 303, BLOCK_WITH);
+            ctx.drawImage(shieldImage, 220, BLOCK_WITH * numRows, 80, 80);
             ctx.fillStyle = 'black';
             ctx.font = '40px serif';
-            ctx.fillText(':', 310, 101 * numRows + 60);
+            ctx.fillText(':', 310, BLOCK_WITH * numRows + 60);
             ctx.font = '50px serif';
-            ctx.fillText(player.defense + '%', 321 + 25, 101 * numRows + 65);
+            ctx.fillText(player.defense + '%', 321 + 25, BLOCK_WITH * numRows + 65);
         },
         paintGameOver: function() {
             ctx.strokeStyle = 'black';
             ctx.lineWidth = 8;
             ctx.font = '80px sans-serif';
-            ctx.strokeText('Game Over !', (numCols / 2 - 2) * 101 - 30, (numRows / 2 - 1) * 101);
+            ctx.strokeText('Game Over !', (numCols / 2 - 2) * BLOCK_WITH - 30, (numRows / 2 - 1) * BLOCK_WITH);
             ctx.fillStyle = 'white';
             ctx.font = '80px sans-serif';
-            ctx.fillText('Game Over !', (numCols / 2 - 2) * 101 - 30, (numRows / 2 - 1) * 101);
+            ctx.fillText('Game Over !', (numCols / 2 - 2) * BLOCK_WITH - 30, (numRows / 2 - 1) * BLOCK_WITH);
         },
         paintRestartMessage: function() {
             ctx.strokeStyle = 'black';
             ctx.lineWidth = 6;
             ctx.font = '30px sans-serif';
-            ctx.strokeText('press Enter to restart game', (numCols / 2 - 2) * 101, (numRows / 2) * 101 - 20);
+            ctx.strokeText('press Enter to restart game', (numCols / 2 - 2) * BLOCK_WITH, (numRows / 2) * BLOCK_WITH - 20);
             ctx.fillStyle = 'white';
             ctx.font = '30px sans-serif';
-            ctx.fillText('press Enter to restart game', (numCols / 2 - 2) * 101, (numRows / 2) * 101 - 20);
+            ctx.fillText('press Enter to restart game', (numCols / 2 - 2) * BLOCK_WITH, (numRows / 2) * BLOCK_WITH - 20);
             doc.addEventListener('keyup', function(e){
                 if(e.keyCode === 13 && stop.stopFlag === true && stop.typeFlag === 'lose') {
                     restartGame();
@@ -187,19 +204,19 @@ var Engine = (function(global) {
             ctx.strokeStyle = 'black';
             ctx.lineWidth = 8;
             ctx.font = '80px sans-serif';
-            ctx.strokeText('You Win !', (numCols / 2 - 2) * 101 + 15, (numRows / 2 - 1) * 101);
+            ctx.strokeText('You Win !', (numCols / 2 - 2) * BLOCK_WITH + 15, (numRows / 2 - 1) * BLOCK_WITH);
             ctx.fillStyle = 'white';
             ctx.font = '80px sans-serif';
-            ctx.fillText('You Win !', (numCols / 2 - 2) * 101 + 15, (numRows / 2 - 1) * 101);
+            ctx.fillText('You Win !', (numCols / 2 - 2) * BLOCK_WITH + 15, (numRows / 2 - 1) * BLOCK_WITH);
         },
         paintNextMessage: function() {
            ctx.strokeStyle = 'black';
            ctx.lineWidth = 6;
            ctx.font = '30px sans-serif';
-           ctx.strokeText('press Enter to start next level', (numCols / 2 - 2) * 101, (numRows / 2) * 101 - 20);
+           ctx.strokeText('press Enter to start next level', (numCols / 2 - 2) * BLOCK_WITH, (numRows / 2) * BLOCK_WITH - 20);
            ctx.fillStyle = 'white';
            ctx.font = '30px sans-serif';
-           ctx.fillText('press Enter to start next level', (numCols / 2 - 2) * 101, (numRows / 2) * 101 - 20);
+           ctx.fillText('press Enter to start next level', (numCols / 2 - 2) * BLOCK_WITH, (numRows / 2) * BLOCK_WITH - 20);
            doc.addEventListener('keyup', function(e){
                if(e.keyCode === 13 && stop.stopFlag === true && stop.typeFlag === 'win') {
                    Resources.get('sounds/enter_sound.mp3').play();
@@ -209,15 +226,15 @@ var Engine = (function(global) {
         },
         paintTimeBar: function() {
             ctx.beginPath();
-            ctx.moveTo(0, (numRows - 1) * 83 + 171);
-            ctx.lineTo(numCols * 101, (numRows - 1) * 83 + 171);
+            ctx.moveTo(0, (numRows - 1) * BLOCK_HEIGHT + 171);
+            ctx.lineTo(numCols * BLOCK_WITH, (numRows - 1) * BLOCK_HEIGHT + 171);
             ctx.strokeStyle = '#ffe34b';
             ctx.lineWidth = 8;
             ctx.stroke();
             ctx.beginPath();
             gameTime.timeRemain -= gameTime.timeInterval;
-            ctx.moveTo(numCols * 101 / gameTime.totalTime * gameTime.timeRemain, (numRows - 1) * 83 + 171);
-            ctx.lineTo(numCols * 101, (numRows - 1) * 83 + 171);
+            ctx.moveTo(numCols * BLOCK_WITH / gameTime.totalTime * gameTime.timeRemain, (numRows - 1) * BLOCK_HEIGHT + 171);
+            ctx.lineTo(numCols * BLOCK_WITH, (numRows - 1) * BLOCK_HEIGHT + 171);
             ctx.strokeStyle = '#797979';
             ctx.lineWidth = 8;
             ctx.stroke();
@@ -227,13 +244,73 @@ var Engine = (function(global) {
         },
         paintScore: function() {
             ctx.fillStyle = 'white';
-            ctx.fillRect((numCols - 3) * 101, 101 * numRows - 60, 303, 202);
-            ctx.drawImage(Resources.get('images/Star.png'), (numCols - 3) * 101 + 30, 101 * numRows - 56, 95, 161);
+            ctx.fillRect((numCols - 3) * BLOCK_WITH, BLOCK_WITH * numRows - 60, 303, 202);
+            ctx.drawImage(Resources.get('images/Star.png'), (numCols - 3) * BLOCK_WITH + 30, BLOCK_WITH * numRows - 56, 95, 161);
             ctx.fillStyle = 'black';
             ctx.font = '40px serif';
-            ctx.fillText(':', (numCols - 2) * 101 + 36, 101 * numRows + 60);
+            ctx.fillText(':', (numCols - 2) * BLOCK_WITH + 36, BLOCK_WITH * numRows + 60);
             ctx.font = '50px serif';
-            ctx.fillText('0', (numCols - 2) * 101 + 47 + 25, 101 * numRows + 65);
+            ctx.fillText(player.score, (numCols - 2) * BLOCK_WITH + 47 + 25, BLOCK_WITH * numRows + 65);
+        }
+    };
+
+    var myCreator = {
+        createStar: function() {
+            if(stop.stopFlag === false) {
+                timeouts.push(setTimeout(function () {
+                    do {
+                        var star = new Star();
+                    } while (isRepeat(star.x, star.y));
+                    props.push(star);
+                    gameMap[star.y][star.x] = 5;
+                    myCreator.createStar();
+                    timeouts.push(setTimeout(function () {
+                        gameMap[star.y][star.x] = 0;
+                        for (var k = 0; k < props.length; k++) {
+                            if (props[k].constructor === Star) {
+                                if (props[k].x === star.x && props[k].y === star.y) {
+                                    break;
+                                }
+                            }
+                        }
+                        if (k < props.length) {
+                            props.splice(k, 1);
+                        }
+                    }, 2000));
+                }, 2001));
+            }
+        },
+        createRock: function(rockNum) {
+            for(var i=0; i<rockNum; i++) {
+                do {
+                    var rock = new Rock();
+                }while(isRepeat(rock.x, rock.y));
+                props.push(rock);
+            }
+        },
+        createBlueGem: function(blueGemNum) {
+            for(var j=0; j<blueGemNum; j++) {
+                do {
+                    var blueGem = new BlueGem();
+                }while(isRepeat(blueGem.x, blueGem.y));
+                props.push(blueGem);
+            }
+        },
+        createGreenGem: function(greenGemNum) {
+            for(var j=0; j<greenGemNum; j++) {
+                do {
+                    var greenGem = new GreenGem();
+                }while(isRepeat(greenGem.x, greenGem.y));
+                props.push(greenGem);
+            }
+        },
+        createOrangeGem: function(orangeGemNum) {
+            for(var j=0; j<orangeGemNum; j++) {
+                do {
+                    var orangeGem = new OrangeGem();
+                }while(isRepeat(orangeGem.x, orangeGem.y));
+                props.push(orangeGem);
+            }
         }
     };
 
@@ -254,9 +331,14 @@ var Engine = (function(global) {
 
     //处理游戏重置逻辑 执行初始化和restart操作 只会被init调用一次
     function reset() {
+        for(var i=0; i<timeouts.length; i++) {
+            clearTimeout(timeouts[i]);
+        }
+        timeouts = [];
         if(stop.typeFlag === 'lose') {
             player.life = 5;
             player.defense = 0;
+            player.score = 0;
             player.sprite = 'images/' + player.characters[player.life - 1];
         }
         player.resetPlayer();
@@ -269,37 +351,17 @@ var Engine = (function(global) {
         var rockNum = 5;// 极小概率 石头数等于列数时 所有石块在一行上 需要修复
         var gemNum = 3;// 总的宝石个数 蓝绿橙三种宝石个数随机
         props = [];
-        for(var i=0; i<rockNum; i++) {
-            var rock;
-            do {
-                rock = new Rock();
-            }while(isRepeat(rock.x, rock.y));
-            props.push(rock);
-        }
+        myCreator.createRock(rockNum);
 
         var blueGemNum = Math.floor(Math.random() * (gemNum + 1));
         var greenGemNum = Math.floor(Math.random() * (gemNum - blueGemNum + 1));
         var orangeGemNum = gemNum - blueGemNum - greenGemNum;
         console.log(blueGemNum+ " " +greenGemNum+ " " +orangeGemNum); //输出三种宝石个数 调试完成后删除
-        for(var j=0; j<blueGemNum; j++) {
-            do {
-                blueGem = new BlueGem();
-            }while(isRepeat(blueGem.x, blueGem.y));
-            props.push(blueGem);
-        }
-        for(var j=0; j<greenGemNum; j++) {
-            do {
-                greenGem = new GreenGem();
-            }while(isRepeat(greenGem.x, greenGem.y));
-            props.push(greenGem);
-        }
-        for(var j=0; j<orangeGemNum; j++) {
-            do {
-                orangeGem = new OrangeGem();
-            }while(isRepeat(orangeGem.x, orangeGem.y));
-            props.push(orangeGem);
-        }
 
+        myCreator.createStar();
+        myCreator.createBlueGem(blueGemNum);
+        myCreator.createGreenGem(greenGemNum);
+        myCreator.createOrangeGem(orangeGemNum);
 
         console.log(props); //输出小道具数组 测试完成后删除
         gameMap = [];
@@ -311,13 +373,13 @@ var Engine = (function(global) {
                 for(var k=0; k<props.length; k++){
                     var a_object = props[k];
                     if(a_object.y === i && a_object.x === j) {
-                        if(props[k].constructor === OrangeGem) {
+                        if(props[k].constructor === Star) {
+                            flag = 5;
+                        }else if(props[k].constructor === OrangeGem) {
                             flag = 4;
-                        }
-                        if(props[k].constructor === GreenGem) {
+                        }else if(props[k].constructor === GreenGem) {
                             flag = 3;
-                        }
-                        if(props[k].constructor === BlueGem) {
+                        }else if(props[k].constructor === BlueGem) {
                             flag = 2;
                         }else if(props[k].constructor === Rock) {
                             flag = 1;
@@ -394,35 +456,37 @@ var Engine = (function(global) {
 
     //检测运动方向上的石块
     var isRock = function(x, y) {
-        if(gameMap[Math.ceil(y / 83)][x / 101] === 1) {
+        if(gameMap[Math.ceil(y / BLOCK_HEIGHT)][x / BLOCK_WITH] === 1) {
             return true;
         }
         return false;
     };
 
     //检测运动方向上的宝石
-    var isGem = function(player) {
-        if(gameMap[Math.ceil(player.y / 83)][player.x / 101] === 2) {
-            eatGem(player, 'blue');
-        }else if(gameMap[Math.ceil(player.y / 83)][player.x / 101] === 3) {
-            eatGem(player, 'green');
-        }else if(gameMap[Math.ceil(player.y / 83)][player.x / 101] === 4) {
-            eatGem(player, 'orange');
+    var isGem = function() {
+        if(gameMap[Math.ceil(player.y / BLOCK_HEIGHT)][player.x / BLOCK_WITH] === 2) {
+            eatGem('blue');
+        }else if(gameMap[Math.ceil(player.y / BLOCK_HEIGHT)][player.x / BLOCK_WITH] === 3) {
+            eatGem('green');
+        }else if(gameMap[Math.ceil(player.y / BLOCK_HEIGHT)][player.x / BLOCK_WITH] === 4) {
+            eatGem('orange');
+        }else if(gameMap[Math.ceil(player.y / BLOCK_HEIGHT)][player.x / BLOCK_WITH] === 5) {
+            eatStar();
         }
         return 0;
     };
 
     //拾取运动方向上的宝石
-    var eatGem = function(player, gemType) {
+    var eatGem = function(gemType) {
         Resources.get('sounds/eat_gem.mp3').play();
         switch(gemType) {
             case 'blue': {
                 player.defense += 50;
-                if(player.defense > 100) palyer.defense = 100;
+                if(player.defense >= 50) player.defense = 100;
                 for(var i=0; i<props.length; i++) {
                     if(props[i].constructor === BlueGem) {
-                        //人物的x y 已经乘了 101 和 83 小道具的x y还没有
-                        if(player.x === (props[i].x * 101) && player.y === (props[i].y * 83 - 30)) {
+                        //人物的x y 已经乘了 BLOCK_WITH 和 BLOCK_HEIGHT 小道具的x y还没有
+                        if(player.x === (props[i].x * BLOCK_WITH) && player.y === (props[i].y * BLOCK_HEIGHT - 30)) {
                             break;
                         }
                     }
@@ -441,7 +505,7 @@ var Engine = (function(global) {
                 }
                 for(var i=0; i<props.length; i++) {
                     if(props[i].constructor === GreenGem) {
-                        if(player.x === (props[i].x * 101) && player.y === (props[i].y * 83 - 30)) {
+                        if(player.x === (props[i].x * BLOCK_WITH) && player.y === (props[i].y * BLOCK_HEIGHT - 30)) {
                             break;
                         }
                     }
@@ -464,7 +528,7 @@ var Engine = (function(global) {
                 });//没有写player属性变化
                 for(var i=0; i<props.length; i++) {
                     if(props[i].constructor === OrangeGem) {
-                        if(player.x === (props[i].x * 101) && player.y === (props[i].y * 83 - 30)) {
+                        if(player.x === (props[i].x * BLOCK_WITH) && player.y === (props[i].y * BLOCK_HEIGHT - 30)) {
                             break;
                         }
                     }
@@ -474,6 +538,21 @@ var Engine = (function(global) {
                 break;
             }
         }
+    };
+
+    var eatStar = function() {
+        player.score += 1;
+        myPainter.paintScore();
+        for(var i=0; i<props.length; i++) {
+            if(props[i].constructor === Star) {
+                //这里减去 30 是因为创建人物时对人物进行了位置调整
+                if(player.x === (props[i].x * BLOCK_WITH) && player.y === (props[i].y * BLOCK_HEIGHT - 30)) {
+                    break;
+                }
+            }
+        }
+        gameMap[props[i].y][props[i].x] = 0;
+        props.splice(i, 1);
     };
 
     global.ctx = ctx;

@@ -9,11 +9,11 @@ var Enemy = function(x, y, speed) {
 // 用来更新敌人的位置 dt 表示时间间隙
 Enemy.prototype.update = function(dt) {
     this.x += this.speed * dt;
-    if(this.x > 101 * numCols){
+    if(this.x > BLOCK_WITH * numCols){
         var row = Math.floor(Math.random() * (numRows - 2) + 1);
         this.speed = Math.floor(Math.random() * 400) +50;
-        this.y = row * 83 -20;
-        this.x = -2 * 101;
+        this.y = row * BLOCK_HEIGHT -20;
+        this.x = -2 * BLOCK_WITH;
     }
     // 每一次的移动都乘以 dt 参数 以此来保证游戏在所有的电脑上 都是以同样的速度运行
 };
@@ -29,6 +29,7 @@ var Player = function(x, y) {
     this.defense = 0;
     this.characters = ["char-princess-girl.png", "char-horn-girl.png", "char-pink-girl.png", "char-cat-girl.png", "char-boy.png"];
     this.sprite = "images/" + this.characters[this.life - 1];
+    this.score = 0;
 };
 
 Player.prototype.update = function() {
@@ -55,43 +56,43 @@ Player.prototype.render = function() {
 };
 
 Player.prototype.resetPlayer = function() {
-    this.x = 101 * (numCols - 1) / 2;
-    this.y = (numRows - 1) * 83 - 30;
+    this.x = BLOCK_WITH * (numCols - 1) / 2;
+    this.y = (numRows - 1) * BLOCK_HEIGHT - 30;
 };
 
 Player.prototype.move = function(direction) {
     Resources.get('sounds/move.mp3').play();
     switch(direction) {
         case 'left': {
-            if(this.x - 101 >=0 && !isRock(this.x - 101, this.y)) {
-                this.x -= 101;
+            if(this.x - BLOCK_WITH >=0 && !isRock(this.x - BLOCK_WITH, this.y)) {
+                this.x -= BLOCK_WITH;
                 isGem(this);
             }
             break;
         }
         case 'up': {
-            if(this.y - 83 >= -30 + 83 ) {
-                if(!isRock(this.x, this.y - 83)) {
-                    this.y -= 83;
+            if(this.y - BLOCK_HEIGHT >= -30 + BLOCK_HEIGHT ) {
+                if(!isRock(this.x, this.y - BLOCK_HEIGHT)) {
+                    this.y -= BLOCK_HEIGHT;
                     isGem(this);
                 }
             }else {
-                if(!isRock(this.x, this.y - 83)) {
+                if(!isRock(this.x, this.y - BLOCK_HEIGHT)) {
                     stopGame('win');
                 }
             }
             break;
         }
         case 'right': {
-            if(this.x + 101 <= 101 * (numCols - 1) && !isRock(this.x + 101, this.y)){
-                this.x += 101;
+            if(this.x + BLOCK_WITH <= BLOCK_WITH * (numCols - 1) && !isRock(this.x + BLOCK_WITH, this.y)){
+                this.x += BLOCK_WITH;
                 isGem(this);
             }
             break;
         }
         case 'down': {
-            if(this.y + 83 <= (numRows - 1) * 83 && !isRock(this.x, this.y + 83)){
-                this.y += 83;
+            if(this.y + BLOCK_HEIGHT <= (numRows - 1) * BLOCK_HEIGHT && !isRock(this.x, this.y + BLOCK_HEIGHT)){
+                this.y += BLOCK_HEIGHT;
                 isGem(this);
             }
             break;
@@ -135,16 +136,18 @@ Player.prototype.handleInput = function(direction) {
 };
 
 //游戏地图的大小
-var numRows = 7 , //当改变 numRows 时 还需要改变 engine 的 rowImages
+var BLOCK_WITH = 101,
+    BLOCK_HEIGHT = 83,
+    numRows = 7 , //当改变 numRows 时 还需要改变 engine 的 rowImages
     numCols = 9 + 2;
 var allEnemies = [];
-var player = new Player((numRows-1)/2 * 101, (numCols-1) * 83 - 30);
+var player = new Player((numRows-1)/2 * BLOCK_WITH, (numCols-1) * BLOCK_HEIGHT - 30);
 var winGame = false;
 function addEnemies() {
     for(var i=0; i<4; i++){
         var row = Math.floor(Math.random() * (numRows - 2) + 1);
         var speed = Math.floor(Math.random() * 400) + 80;
-        allEnemies.push(new Enemy(-2 * 101, row * 83 - 20, speed));
+        allEnemies.push(new Enemy(-2 * BLOCK_WITH, row * BLOCK_HEIGHT - 20, speed));
     }
 }
 addEnemies();
