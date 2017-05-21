@@ -30,6 +30,8 @@ var Player = function(x, y) {
     this.characters = ["char-princess-girl.png", "char-horn-girl.png", "char-pink-girl.png", "char-cat-girl.png", "char-boy.png"];
     this.sprite = "images/" + this.characters[this.life - 1];
     this.score = 0;
+    this.targetScore = 1;
+    this.level = 1;
 };
 
 Player.prototype.update = function() {
@@ -38,6 +40,7 @@ Player.prototype.update = function() {
             this.defense -= 5;
             myPainter.paintShield();
         }else {
+            Resources.get('sounds/lost_life.mp3').play();
             this.life -= 1;
             if(this.life === 0){
                 stopGame('lose');
@@ -61,7 +64,9 @@ Player.prototype.resetPlayer = function() {
 };
 
 Player.prototype.move = function(direction) {
-    Resources.get('sounds/move.mp3').play();
+    var move_sound = Resources.get('sounds/move.mp3');
+    move_sound.volume = 0.1;
+    move_sound.play();
     switch(direction) {
         case 'left': {
             if(this.x - BLOCK_WITH >=0 && !isRock(this.x - BLOCK_WITH, this.y)) {
@@ -78,7 +83,12 @@ Player.prototype.move = function(direction) {
                 }
             }else {
                 if(!isRock(this.x, this.y - BLOCK_HEIGHT)) {
-                    stopGame('win');
+                    if(player.beyondTargetScore() === true) {
+                        player.score = Math.floor(player.score / 2);
+                        stopGame('win');
+                    }else {
+                        Resources.get('sounds/error.mp3').play();
+                    }
                 }
             }
             break;
@@ -113,9 +123,16 @@ Player.prototype.checkCollision = function() {
     return flag;
 };
 
-//处理键盘方向键输入
-Player.prototype.handleInput = function(direction) {
-    switch(direction) {
+Player.prototype.beyondTargetScore = function() {
+    if(this.score >= this.targetScore) {
+        return true;
+    }
+    return false;
+};
+
+//处理键盘输入
+Player.prototype.handleInput = function(keyword) {
+    switch(keyword) {
         case 'left': {
             this.move('left');
             break;
@@ -131,6 +148,9 @@ Player.prototype.handleInput = function(direction) {
         case 'down': {
             this.move('down');
             break;
+        }
+        case 'space': {
+            isStarGate();
         }
     }
 };
@@ -156,7 +176,8 @@ document.addEventListener('keyup', function(e) {
         37: 'left',
         38: 'up',
         39: 'right',
-        40: 'down'
+        40: 'down',
+        32: 'space'
     };
 
     player.handleInput(allowedKeys[e.keyCode]);

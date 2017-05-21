@@ -10,10 +10,10 @@ var Engine = (function(global) {
         stop = {stopFlag: false, typeFlag: 'lose'}, //stopFlag 标记停止或继续游戏 typeFlag 标记输赢
         heartImage, //生命值图片
         shieldImage, //防御图片
-        gameTime; //游戏时间
-
-    var gameMap = [],
-        timeouts = []; //用来记录整个地图的框架 0为普通块 1为石头 2为蓝宝石 3为绿宝石 4为橙宝石
+        gameTime, //游戏时间
+        GAME_READY = false;
+    var gameMap = [], //用来记录整个地图的框架 0为普通块 1为石头 2为蓝宝石 3为绿宝石 4为橙宝石 5为星星 6为传送门
+        timeouts = []; //用来重置时清除未执行的用来产生星星的 setTimeout
 
     canvas.width = numCols * BLOCK_WITH;
     canvas.height = numRows * BLOCK_WITH + BLOCK_WITH;
@@ -21,38 +21,40 @@ var Engine = (function(global) {
 
     // 这个函数是整个游戏的主入口 负责适当的调用 update / render 函数
     function main() {
-        // 如果想要更平滑的动画过度就需要获取时间间隙 因为每个人的电脑处理指令的速度是不一样的 我们需要一个对每个人都一样的常数（而不管他们的电脑有多快）
-        var now = Date.now(),
-            dt = (now - lastTime) / 1000.0;
-        // 调用 update / render 函数 传递事件间隙给 update 函数因为这样可以使动画更加顺畅
-        update(dt);
         render();
 
-        // 设置 lastTime 变量 它会被用来决定 main 函数下次被调用的事件
-        lastTime = now;
-
-        if(stop.stopFlag !== true) {
-            win.requestAnimationFrame(main);
-        }else {
-            if(stop.typeFlag === 'lose') {
-                myPainter.paintGameOver();
-                myPainter.paintRestartMessage();
-                Resources.get('sounds/game_over.mp3').play();
+        if(GAME_READY) {
+            var bg_sound = Resources.get('sounds/bg_sound.mp3');
+            bg_sound.volume = 0.1;
+            bg_sound.play();
+            // 如果想要更平滑的动画过度就需要获取时间间隙 因为每个人的电脑处理指令的速度是不一样的 我们需要一个对每个人都一样的常数（而不管他们的电脑有多快）
+            var now = Date.now(),
+                dt = (now - lastTime) / 1000.0;
+            // 调用 update / render 函数 传递事件间隙给 update 函数因为这样可以使动画更加顺畅
+            update(dt);
+            // 设置 lastTime 变量 它会被用来决定 main 函数下次被调用的事件
+            lastTime = now;
+            if(stop.stopFlag !== true) {
+                win.requestAnimationFrame(main);
             }else {
-                myPainter.paintGameWin();
-                myPainter.paintNextMessage();
-                Resources.get('sounds/next_level.mp3').play();
+                if(stop.typeFlag === 'lose') {
+                    myPainter.paintGameOver();
+                    myPainter.paintRestartMessage();
+                    Resources.get('sounds/game_over.mp3').play();
+                }else if(stop.typeFlag === 'win') {
+                    myPainter.paintGameWin();
+                    myPainter.paintNextMessage();
+                    Resources.get('sounds/next_level.mp3').play();
+                }
             }
+        }else {
+            myPainter.paintStartMessage();
         }
     }
 
     // 这个函数调用一些初始化工作 特别是设置游戏必须的 lastTime 变量 这些工作只用做一次就够了
     function init() {
-        var bg_sound = Resources.get('sounds/bg_sound.mp3');
-        bg_sound.volume = 0.1;
-        //bg_sound.play();
         reset();
-        lastTime = Date.now();
         main();
     }
 
@@ -92,6 +94,8 @@ var Engine = (function(global) {
         for(var i=0; i<props.length; i++){
             if(props[i].constructor === Rock) {
                 ctx.drawImage(Resources.get(props[i].sprite), props[i].x * BLOCK_WITH, props[i].y * BLOCK_HEIGHT - 30);
+            }else if(props[i].constructor === StarGate) {
+                ctx.drawImage(Resources.get(props[i].sprite), props[i].x * BLOCK_WITH + 7, props[i].y * BLOCK_HEIGHT - 15, 85, 135);
             }else if(props[i].constructor === BlueGem || props[i].constructor === GreenGem || props[i].constructor === OrangeGem) {
                 ctx.drawImage(Resources.get(props[i].sprite), props[i].x * BLOCK_WITH + 7, props[i].y * BLOCK_HEIGHT - 9, 85, 135);
             }else if(props[i].constructor === Star) {
@@ -101,6 +105,13 @@ var Engine = (function(global) {
         myPainter.paintTimeBar();//当切换到其它标签页时 paintTimeBar 会停止
         renderEntities();
     }
+
+    //传送门类
+    var StarGate = function() {
+        this.x = Math.floor(Math.random() * numCols);
+        this.y = Math.floor(Math.random() * (numRows - 2)) + 1;
+        this.sprite = 'images/StarGate.png';
+    };
 
     //星星类
     var Star = function() {
@@ -204,10 +215,10 @@ var Engine = (function(global) {
             ctx.strokeStyle = 'black';
             ctx.lineWidth = 8;
             ctx.font = '80px sans-serif';
-            ctx.strokeText('You Win !', (numCols / 2 - 2) * BLOCK_WITH + 15, (numRows / 2 - 1) * BLOCK_WITH);
+            ctx.strokeText('Level '+ player.level + ' ,You Win !', (numCols / 2 - 3) * BLOCK_WITH, (numRows / 2 - 1) * BLOCK_WITH);
             ctx.fillStyle = 'white';
             ctx.font = '80px sans-serif';
-            ctx.fillText('You Win !', (numCols / 2 - 2) * BLOCK_WITH + 15, (numRows / 2 - 1) * BLOCK_WITH);
+            ctx.fillText('Level '+ player.level + ' ,You Win !', (numCols / 2 - 3) * BLOCK_WITH, (numRows / 2 - 1) * BLOCK_WITH);
         },
         paintNextMessage: function() {
            ctx.strokeStyle = 'black';
@@ -251,6 +262,29 @@ var Engine = (function(global) {
             ctx.fillText(':', (numCols - 2) * BLOCK_WITH + 36, BLOCK_WITH * numRows + 60);
             ctx.font = '50px serif';
             ctx.fillText(player.score, (numCols - 2) * BLOCK_WITH + 47 + 25, BLOCK_WITH * numRows + 65);
+        },
+        paintStartMessage: function() {
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 8;
+            ctx.font = '80px sans-serif';
+            ctx.strokeText('Level '+ player.level, (numCols / 2 - 2) * BLOCK_WITH + 65, (numRows / 2 - 1) * BLOCK_WITH);
+            ctx.fillStyle = 'white';
+            ctx.font = '80px sans-serif';
+            ctx.fillText('Level '+ player.level, (numCols / 2 - 2) * BLOCK_WITH + 65, (numRows / 2 - 1) * BLOCK_WITH);
+
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 6;
+            ctx.font = '30px sans-serif';
+            ctx.strokeText('Target Score : ' + player.targetScore, (numCols / 2 - 2) * BLOCK_WITH + 75, (numRows / 2) * BLOCK_WITH - 20);
+            ctx.fillStyle = 'white';
+            ctx.font = '30px sans-serif';
+            ctx.fillText('Target Score : ' + player.targetScore, (numCols / 2 - 2) * BLOCK_WITH + 75, (numRows / 2) * BLOCK_WITH - 20);
+
+            setTimeout(function() {
+                GAME_READY = true;
+                lastTime = Date.now();
+                main();
+            }, 3000);
         }
     };
 
@@ -311,6 +345,12 @@ var Engine = (function(global) {
                 }while(isRepeat(orangeGem.x, orangeGem.y));
                 props.push(orangeGem);
             }
+        },
+        createStarGate: function() {
+            do {
+                var starGate = new StarGate();
+            }while(isRepeat(starGate.x, starGate.y));
+            props.push(starGate);
         }
     };
 
@@ -339,6 +379,8 @@ var Engine = (function(global) {
             player.life = 5;
             player.defense = 0;
             player.score = 0;
+            player.targetScore = 1;
+            player.level = 1;
             player.sprite = 'images/' + player.characters[player.life - 1];
         }
         player.resetPlayer();
@@ -356,14 +398,15 @@ var Engine = (function(global) {
         var blueGemNum = Math.floor(Math.random() * (gemNum + 1));
         var greenGemNum = Math.floor(Math.random() * (gemNum - blueGemNum + 1));
         var orangeGemNum = gemNum - blueGemNum - greenGemNum;
-        console.log(blueGemNum+ " " +greenGemNum+ " " +orangeGemNum); //输出三种宝石个数 调试完成后删除
+        //console.log(blueGemNum+ " " +greenGemNum+ " " +orangeGemNum); //输出三种宝石个数 调试完成后删除
 
         myCreator.createStar();
         myCreator.createBlueGem(blueGemNum);
         myCreator.createGreenGem(greenGemNum);
         myCreator.createOrangeGem(orangeGemNum);
+        myCreator.createStarGate();
 
-        console.log(props); //输出小道具数组 测试完成后删除
+        //console.log(props); //输出小道具数组 测试完成后删除
         gameMap = [];
 
         for(var i=0; i<numRows; i++){
@@ -373,7 +416,9 @@ var Engine = (function(global) {
                 for(var k=0; k<props.length; k++){
                     var a_object = props[k];
                     if(a_object.y === i && a_object.x === j) {
-                        if(props[k].constructor === Star) {
+                        if(props[k].constructor === StarGate) {
+                            flag = 6;
+                        }else if(props[k].constructor === Star) {
                             flag = 5;
                         }else if(props[k].constructor === OrangeGem) {
                             flag = 4;
@@ -391,7 +436,7 @@ var Engine = (function(global) {
             }
             gameMap.push(row);
         }
-        console.log(gameMap); //输出游戏地图 测试完成后删除
+        //console.log(gameMap); //输出游戏地图 测试完成后删除
 
         gameTime = new GameTime();
 
@@ -415,12 +460,16 @@ var Engine = (function(global) {
         'images/gem_orange.png',
         'images/shield.png',
         'images/Star.png',
+        'images/StarGate.png',
         'sounds/move.mp3',
         'sounds/eat_gem.mp3',
         'sounds/next_level.mp3',
         'sounds/game_over.mp3',
         'sounds/bg_sound.mp3',
-        'sounds/enter_sound.mp3'
+        'sounds/enter_sound.mp3',
+        'sounds/error.mp3',
+        'sounds/eatStar.mp3',
+        'sounds/lost_life.mp3'
     ]);
     Resources.onReady(init);
 
@@ -428,13 +477,17 @@ var Engine = (function(global) {
         stop.stopFlag = false;
         allEnemies = [];
         addEnemies();
+        GAME_READY = false;
         init();
     };
 
     var nextLevel = function() {
+        player.level += 1;
+        player.targetScore += player.level * 2;
         stop.stopFlag = false;
         allEnemies = [];
         addEnemies();
+        GAME_READY = false;
         init();
     };
 
@@ -460,6 +513,16 @@ var Engine = (function(global) {
             return true;
         }
         return false;
+    };
+
+    var isStarGate = function() {
+        if(gameMap[Math.ceil(player.y / BLOCK_HEIGHT)][player.x / BLOCK_WITH] === 6) {
+            if(player.beyondTargetScore() === true) {
+                stopGame('win');
+            }else {
+                Resources.get('sounds/error.mp3').play();
+            }
+        }
     };
 
     //检测运动方向上的宝石
@@ -541,6 +604,7 @@ var Engine = (function(global) {
     };
 
     var eatStar = function() {
+        Resources.get('sounds/eatStar.mp3').play();
         player.score += 1;
         myPainter.paintScore();
         for(var i=0; i<props.length; i++) {
@@ -560,5 +624,6 @@ var Engine = (function(global) {
     global.stopGame = stopGame;
     global.isRock = isRock;
     global.isGem = isGem;
+    global.isStarGate = isStarGate;
     global.myPainter = myPainter;
 })(this);
